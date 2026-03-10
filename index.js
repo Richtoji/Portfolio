@@ -1,4 +1,60 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Theme & Navigation Elements
+    const themeToggle = document.getElementById('theme-toggle');
+    const menuToggle = document.querySelector('.menu-toggle');
+    const navContent = document.querySelector('.nav-content');
+    const html = document.documentElement;
+    const body = document.body;
+
+    // Initialize theme
+    const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    html.setAttribute('data-theme', savedTheme);
+
+    // Premium Theme Toggle Logic
+    if (themeToggle) {
+        // Magnetic Effect
+        themeToggle.addEventListener('mousemove', (e) => {
+            const rect = themeToggle.getBoundingClientRect();
+            const x = e.clientX - rect.left - rect.width / 2;
+            const y = e.clientY - rect.top - rect.height / 2;
+            themeToggle.style.transform = `translate(${x * 0.3}px, ${y * 0.3}px) scale(1.1)`;
+        });
+
+        themeToggle.addEventListener('mouseleave', () => {
+            themeToggle.style.transform = '';
+        });
+
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+
+            // Pop animation
+            themeToggle.style.transform = 'scale(1.4)';
+            setTimeout(() => themeToggle.style.transform = '', 250);
+        });
+    }
+
+    // Mobile Menu Logic
+    if (menuToggle && navContent) {
+        menuToggle.addEventListener('click', () => {
+            menuToggle.classList.toggle('active');
+            navContent.classList.toggle('active');
+            body.style.overflow = navContent.classList.contains('active') ? 'hidden' : '';
+        });
+
+        // Close menu when clicking links
+        document.querySelectorAll('.nav-links a').forEach(link => {
+            link.addEventListener('click', () => {
+                menuToggle.classList.remove('active');
+                navContent.classList.remove('active');
+                body.style.overflow = '';
+            });
+        });
+    }
+
     // 1. Mesh Background Simulation (Advanced)
     const canvas = document.getElementById('liquid-canvas');
     const ctx = canvas.getContext('2d');
@@ -45,7 +101,8 @@ document.addEventListener('DOMContentLoaded', () => {
             gradient.addColorStop(0, this.color);
             gradient.addColorStop(1, 'transparent');
 
-            ctx.globalCompositeOperation = 'screen';
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            ctx.globalCompositeOperation = currentTheme === 'light' ? 'multiply' : 'screen';
             ctx.fillStyle = gradient;
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
@@ -54,10 +111,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const blobColors = [
-        'rgba(255, 77, 77, 0.15)',   // Accent
-        'rgba(138, 43, 226, 0.12)',  // Secondary
-        'rgba(0, 212, 255, 0.08)',   // Cyan
-        'rgba(255, 77, 77, 0.05)'    // Subtle Accent
+        'rgba(255, 77, 77, 0.12)',   // Slightly less opaque for better overlap
+        'rgba(138, 43, 226, 0.1)',
+        'rgba(0, 212, 255, 0.06)',
+        'rgba(255, 77, 77, 0.04)'
     ];
 
     function init() {
@@ -118,10 +175,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const interactiveElements = document.querySelectorAll('a, button, .glass');
     interactiveElements.forEach(el => {
         el.addEventListener('mouseenter', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
             cursor.style.transform += ' scale(1.3)';
             cursorDot.style.transform = 'translate(-50%, -50%) scale(2.5)';
-            cursorDot.style.backgroundColor = '#fff';
-            cursorDot.style.boxShadow = '0 0 15px #fff';
+            cursorDot.style.backgroundColor = currentTheme === 'light' ? 'var(--text)' : '#fff';
+            cursorDot.style.boxShadow = `0 0 15px ${currentTheme === 'light' ? 'var(--text)' : '#fff'}`;
         });
         el.addEventListener('mouseleave', () => {
             cursor.style.transform = cursor.style.transform.replace(' scale(1.3)', '');
@@ -206,8 +264,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // 2. Jellyfish Cursor Pulse Burst
         const head = cursor.querySelector('.jellyfish-head');
         if (head) {
-            head.style.fill = '#fff';
-            head.style.filter = 'drop-shadow(0 0 40px var(--accent))';
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const pulseColor = currentTheme === 'light' ? '#000' : '#fff';
+
+            head.style.fill = pulseColor;
+            head.style.filter = `drop-shadow(0 0 40px ${pulseColor})`;
             head.style.transform = 'scale(1.2)';
             head.style.transformOrigin = 'center';
             head.style.transition = 'all 0.1s ease-out';
@@ -237,26 +298,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // 8. Mobile Menu Logic
-    const menuToggle = document.querySelector('.menu-toggle');
-    const navLinksContainer = document.querySelector('.nav-links-container');
-    const navLinksItems = document.querySelectorAll('.nav-links a');
-
-    if (menuToggle && navLinksContainer) {
-        menuToggle.addEventListener('click', () => {
-            menuToggle.classList.toggle('active');
-            navLinksContainer.classList.toggle('active');
-            document.body.style.overflow = navLinksContainer.classList.contains('active') ? 'hidden' : '';
-        });
-
-        navLinksItems.forEach(link => {
-            link.addEventListener('click', () => {
-                menuToggle.classList.remove('active');
-                navLinksContainer.classList.remove('active');
-                document.body.style.overflow = '';
-            });
-        });
-    }
 
     // 9. Scroll Progress Bar
     const scrollProgress = document.querySelector('.scroll-progress');
