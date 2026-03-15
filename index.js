@@ -1,4 +1,40 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // 0. Preloader Logic
+    const preloader = document.getElementById('preloader');
+    const preloaderBar = document.querySelector('.preloader-bar');
+    const percentText = document.querySelector('.preloader-status .percent');
+
+    document.body.classList.add('preloader-active');
+
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress > 100) progress = 100;
+
+        if (preloaderBar) preloaderBar.style.width = `${progress}%`;
+        if (percentText) percentText.textContent = `${Math.floor(progress)}%`;
+
+        if (progress === 100) {
+            clearInterval(interval);
+            setTimeout(() => {
+                if (preloader) {
+                    preloader.classList.add('loaded');
+                    document.body.classList.remove('preloader-active');
+
+                    // Trigger initial animations
+                    document.querySelectorAll('section').forEach((s, i) => {
+                        setTimeout(() => s.classList.add('reveal'), 200 * i);
+                    });
+                }
+            }, 600);
+        }
+    }, 150);
+
+    // Initial check for window load to ensure everything is ready
+    window.addEventListener('load', () => {
+        if (progress < 90) progress = 90; // Fast track to end
+    });
+
     // Theme & Navigation Elements
     const themeToggle = document.getElementById('theme-toggle');
     const menuToggle = document.querySelector('.menu-toggle');
@@ -30,6 +66,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             html.setAttribute('data-theme', newTheme);
             localStorage.setItem('theme', newTheme);
+
+            // Refresh background blobs for the new theme
+            if (typeof initBlobs === 'function') initBlobs();
 
             // Pop animation
             themeToggle.style.transform = 'scale(1.4)';
@@ -110,17 +149,67 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    const blobColors = [
-        'rgba(255, 77, 77, 0.12)',   // Slightly less opaque for better overlap
-        'rgba(138, 43, 226, 0.1)',
-        'rgba(0, 212, 255, 0.06)',
-        'rgba(255, 77, 77, 0.04)'
-    ];
+    function initBlobs() {
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        const colors = isLight ? [
+            'rgba(255, 139, 115, 0.28)', // Rich Peach
+            'rgba(138, 153, 255, 0.25)',  // Saturated Periwinkle
+            'rgba(86, 255, 164, 0.18)',  // Vibrant Mint
+            'rgba(191, 125, 255, 0.15)'  // Royal Lavender
+        ] : [
+            'rgba(255, 77, 77, 0.12)',   // Original Dark Blobs
+            'rgba(138, 43, 226, 0.1)',
+            'rgba(0, 212, 255, 0.06)',
+            'rgba(255, 77, 77, 0.04)'
+        ];
 
-    function init() {
-        blobs = blobColors.map(color => new Blob(color));
+        blobs = colors.map(color => new Blob(color));
+
+        // Initialize colorful particles ONLY for light mode
+        if (isLight) {
+            initColorfulParticles();
+        } else {
+            colorfulParticles = [];
+        }
     }
-    init();
+
+    let colorfulParticles = [];
+    class ColorfulParticle {
+        constructor() {
+            this.x = Math.random() * width;
+            this.y = Math.random() * height;
+            this.size = Math.random() * 150 + 50;
+            const colors = ['rgba(255, 139, 115, 0.15)', 'rgba(138, 153, 255, 0.12)', 'rgba(86, 255, 164, 0.1)', 'rgba(191, 125, 255, 0.08)'];
+            this.color = colors[Math.floor(Math.random() * colors.length)];
+            this.vx = (Math.random() - 0.5) * 0.5;
+            this.vy = (Math.random() - 0.5) * 0.5;
+        }
+
+        update() {
+            this.x += this.vx;
+            this.y += this.vy;
+            if (this.x < -this.size) this.x = width + this.size;
+            if (this.x > width + this.size) this.x = -this.size;
+            if (this.y < -this.size) this.y = height + this.size;
+            if (this.y > height + this.size) this.y = -this.size;
+        }
+
+        draw() {
+            ctx.fillStyle = this.color;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    function initColorfulParticles() {
+        colorfulParticles = [];
+        for (let i = 0; i < 8; i++) {
+            colorfulParticles.push(new ColorfulParticle());
+        }
+    }
+
+    initBlobs();
 
     // 2. Setup Jellyfish Cursor
     const cursor = document.createElement('div');
@@ -160,6 +249,12 @@ document.addEventListener('DOMContentLoaded', () => {
         blobs.forEach(blob => {
             blob.update();
             blob.draw();
+        });
+
+        // Draw Colorful Bokeh Particles (Light Mode Only)
+        colorfulParticles.forEach(p => {
+            p.update();
+            p.draw();
         });
 
         // Interactive Cursor Follow logic
